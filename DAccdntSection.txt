@@ -1,0 +1,52 @@
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- 作成 D_DACCDNTSECTION 事故多発区間
+-- =============================================
+CREATE PROCEDURE [dbo].[SP_create_D_DACCDNTSECTION]
+(
+  @db nvarchar(max)
+)
+AS
+BEGIN
+	DECLARE @sql nvarchar(max) = '';
+	DECLARE @param nvarchar(max) = '';
+
+	TRUNCATE TABLE D_DACCDNTSECTION;
+
+	SET @sql = N'
+	INSERT INTO D_DACCDNTSECTION
+	( DependanceEntityId, XMLProperty )
+	SELECT
+	  T.DependanceEntityId
+	, ''''
+	FROM
+	  [' + @db + '].dbo.R_D_DACCDNTSECTION T;';
+
+	EXECUTE sp_executesql @sql, @param;
+
+	SET @sql =N'
+	UPDATE T
+	SET
+	  T.XMLProperty = (
+		SELECT
+		  T1.AuthorityMngID AS [A]
+		, T1.GeoDirect AS [D]
+		, T1.PartEndPos AS [B]
+		, T1.PartStartPos AS [C]
+
+		FROM
+		  [' + @db + '].dbo.R_D_DACCDNTSECTION T1
+
+		WHERE
+		  T.DependanceEntityId = T1.DependanceEntityId
+		FOR XML PATH(''r'')
+	)
+	FROM
+	  D_DACCDNTSECTION T;';
+
+	EXECUTE sp_executesql @sql, @param;
+
+END;

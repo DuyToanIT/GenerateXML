@@ -1,0 +1,93 @@
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- 作成 D_DARRIVALPNT 案内到着位置
+-- =============================================
+CREATE PROCEDURE [dbo].[SP_create_D_DARRIVALPNT]
+(
+  @db nvarchar(max)
+)
+AS
+BEGIN
+	DECLARE @sql nvarchar(max) = '';
+	DECLARE @param nvarchar(max) = '';
+
+	TRUNCATE TABLE D_DARRIVALPNT;
+
+	SET @sql = N'
+	INSERT INTO D_DARRIVALPNT
+	( DependanceEntityId, XMLProperty )
+	SELECT
+	  T.DependanceEntityId
+	, ''''
+	FROM
+	  [' + @db + '].dbo.R_D_DARRIVALPNT T;';
+
+	EXECUTE sp_executesql @sql, @param;
+
+	SET @sql =N'
+	UPDATE T
+	SET
+	  T.XMLProperty = (
+		SELECT
+		  T1.ArrivalPntDivisionFlg AS [A]
+		, T1.ArrivalPntKindCode AS [B]
+		, T1.ArrivalPointLatitude AS [C/A]
+		, T1.ArrivalPointLongitude AS [C/B]
+
+		, T1.NearestPoint1Latitude AS [D/A]
+		, T1.NearestPoint1Longitude AS [D/B]
+
+		, T1.NearestPoint2Latitude AS [E/A]
+		, T1.NearestPoint2Longitude AS [E/B]
+
+		, T1.RoadOID AS [F]
+		, T1.ArrivalPntSurveyFlg AS [G]
+		, T1.GuideDirectPointLatitude AS [H/A]
+		, T1.GuideDirectPointLongitude AS [H/B]
+
+		, T1.ArrivalPntDirectFlg AS [I]
+		 ,(SELECT
+		  	T2.IETFLangTag AS [A]
+		 ,	T2.Name AS [F]
+		FROM
+		  [' + @db + '].dbo.R_D_DARRIVALPNT_ArrivalPntName T2
+		WHERE
+		  T.DependanceEntityId = T2.DependanceEntityId AND T2.rec = 1
+		FOR XML PATH(''d''), TYPE) AS [J/A]
+		, (SELECT
+		  	T2.IETFLangTag AS [A]
+		 ,	T2.Name AS [F]
+		 ,	T2.VoiceAwareAry AS [D/d]
+		 ,	T2.VoiceCompAry AS [E/d]
+		FROM
+		  [' + @db + '].dbo.R_D_DARRIVALPNT_ArrivalPntName T2
+		WHERE
+		  T.DependanceEntityId = T2.DependanceEntityId AND T2.rec = 2
+		FOR XML PATH(''d''), TYPE) AS [J/A]
+		, (SELECT
+		  	T2.IETFLangTag AS [A]
+		 ,	T2.Name AS [F]
+		FROM
+		  [' + @db + '].dbo.R_D_DARRIVALPNT_ArrivalPntName T2
+		WHERE
+		  T.DependanceEntityId = T2.DependanceEntityId AND T2.rec = 3
+		FOR XML PATH(''d''), TYPE) AS [J/A]
+
+		, T1.ArrivalPntAccurateInfo AS [K]
+
+		FROM
+		  [' + @db + '].dbo.R_D_DARRIVALPNT T1
+
+		WHERE
+		  T.DependanceEntityId = T1.DependanceEntityId
+		FOR XML PATH(''r'')
+	)
+	FROM
+	  D_DARRIVALPNT T;';
+
+	EXECUTE sp_executesql @sql, @param;
+
+END;

@@ -1,0 +1,50 @@
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- 作成 D_DACCDNTPNT 事故多発地点
+-- =============================================
+CREATE PROCEDURE [dbo].[SP_create_D_DACCDNTPNT]
+(
+  @db nvarchar(max)
+)
+AS
+BEGIN
+	DECLARE @sql nvarchar(max) = '';
+	DECLARE @param nvarchar(max) = '';
+
+	TRUNCATE TABLE D_DACCDNTPNT;
+
+	SET @sql = N'
+	INSERT INTO D_DACCDNTPNT
+	( DependanceEntityId, XMLProperty )
+	SELECT
+	  T.DependanceEntityId
+	, ''''
+	FROM
+	  [' + @db + '].dbo.R_D_DACCDNTPNT T;';
+
+	EXECUTE sp_executesql @sql, @param;
+
+	SET @sql =N'
+	UPDATE T
+	SET
+	  T.XMLProperty = (
+		SELECT
+		  T1.AccdntPointLatitude AS [A/A]
+		, T1.AccdntPointLongitude AS [A/B]
+
+		FROM
+		  [' + @db + '].dbo.R_D_DACCDNTPNT T1
+
+		WHERE
+		  T.DependanceEntityId = T1.DependanceEntityId
+		FOR XML PATH(''r'')
+	)
+	FROM
+	  D_DACCDNTPNT T;';
+
+	EXECUTE sp_executesql @sql, @param;
+
+END;

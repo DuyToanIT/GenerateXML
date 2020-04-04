@@ -1,0 +1,51 @@
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- 作成 D_DFRRYPORT05 05フェリー乗り場
+-- =============================================
+CREATE PROCEDURE [dbo].[SP_create_D_DFRRYPORT05]
+(
+  @db nvarchar(max)
+)
+AS
+BEGIN
+	DECLARE @sql nvarchar(max) = '';
+	DECLARE @param nvarchar(max) = '';
+
+	TRUNCATE TABLE D_DFRRYPORT05;
+
+	SET @sql = N'
+	INSERT INTO D_DFRRYPORT05
+	( DependanceEntityId, XMLProperty )
+	SELECT
+	  T.DependanceEntityId
+	, ''''
+	FROM
+	  [' + @db + '].dbo.R_D_DFRRYPORT05 T;';
+
+	EXECUTE sp_executesql @sql, @param;
+
+	SET @sql =N'
+	UPDATE T
+	SET
+	  T.XMLProperty = (
+		SELECT
+		  (SELECT
+			  T1.reftype AS [d/@reftype]
+			, T1.ref AS [d/@ref]
+		  FROM
+		  [' + @db + '].dbo.R_D_DFRRYPORT05_FacilityFrryAry T1
+		  WHERE
+		  T.DependanceEntityId = T1.DependanceEntityId
+		  FOR XML PATH(''''), TYPE
+		) [A]
+
+	)
+	FROM
+	  D_DFRRYPORT05 T;';
+
+	EXECUTE sp_executesql @sql, @param;
+
+END;

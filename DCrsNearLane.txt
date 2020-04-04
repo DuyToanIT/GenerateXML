@@ -1,0 +1,130 @@
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- 作成 D_DCRSNEARLANE 交差点付近レーン
+-- =============================================
+CREATE PROCEDURE [dbo].[SP_create_D_DCRSNEARLANE]
+(
+  @db nvarchar(max)
+)
+AS
+BEGIN
+	DECLARE @sql nvarchar(max) = '';
+	DECLARE @param nvarchar(max) = '';
+
+	TRUNCATE TABLE D_DCRSNEARLANE;
+
+	SET @sql = N'
+	INSERT INTO D_DCRSNEARLANE
+	( DependanceEntityId, XMLProperty )
+	SELECT
+	  T.DependanceEntityId
+	, ''''
+	FROM
+	  [' + @db + '].dbo.R_D_DCRSNEARLANE T;';
+
+	EXECUTE sp_executesql @sql, @param;
+
+	SET @sql =N'
+	UPDATE T
+	SET
+	  T.XMLProperty = (
+		SELECT
+		  T1.GeoDirect AS [A]
+		, T1.LaneInLateralLineFlg AS [B/D]
+		, T1.LaneInMiddleLaneCnt AS [B/B]
+		, T1.LaneInNearestLaneCnt AS [B/A]
+		, T1.LaneIn, (SELECT
+	AddLaneFlg AS [B/F/B]
+	LaneNo AS [B/F/A]
+	, (SELECT
+	Content AS [B/F/D/M]
+	DayOfWeek AS [B/F/D/O]
+	EndDay AS [B/F/D/D]
+	EndHour AS [B/F/D/H]
+	EndMinute AS [B/F/D/I]
+	EndMonth AS [B/F/D/C]
+	OmitDayOfWeek AS [B/F/D/P]
+	OmitRegDays AS [B/F/D/E]
+	OmitRegTime AS [B/F/D/J]
+	RegGroupCode AS [B/F/D/N]
+	RegSourceID AS [B/F/D/L]
+	RegStateCode AS [B/F/D/R]
+	RegTypCode AS [B/F/D/K]
+	StartDay AS [B/F/D/B]
+	StartHour AS [B/F/D/F]
+	StartMinute AS [B/F/D/G]
+	StartMonth AS [B/F/D/A]
+	WeekCondition AS [B/F/D/Q]
+  FROM
+  [' + @db + '].dbo.R_D_DETAILLANEINFO_RegDataAry T3
+  WHERE
+  T2.DependanceEntityId = T3.DependanceEntityId
+  FOR XML PATH(''D''), ROOT(''d''), TYPE
+) [D]
+
+	ReversibleLaneFlg AS [B/F/C]
+  FROM
+  [' + @db + '].dbo.R_D_NEARESTLANEINFO_NearestLaneInfoAry T2
+  WHERE
+  T1. = T2.
+  FOR XML PATH(''F''), ROOT(''d''), TYPE
+) [F]
+
+		, T1.LaneInNearestLaneSeparateCode AS [B/C]
+		, T1.LaneInSidewalkFlg AS [B/E]
+		, T1.LaneInSimpleSlopeCode AS [B/G]
+
+T1.LaneOutLateralLineFlg AS [C/D]
+T1.LaneOutMiddleLaneCnt AS [C/B]
+T1.LaneOutNearestLaneCnt AS [C/A]
+T1.LaneOut, (SELECT
+	AddLaneFlg AS [C/F/B]
+	LaneNo AS [C/F/A]
+	, (SELECT
+	Content AS [C/F/D/M]
+	DayOfWeek AS [C/F/D/O]
+	EndDay AS [C/F/D/D]
+	EndHour AS [C/F/D/H]
+	EndMinute AS [C/F/D/I]
+	EndMonth AS [C/F/D/C]
+	OmitDayOfWeek AS [C/F/D/P]
+	OmitRegDays AS [C/F/D/E]
+	OmitRegTime AS [C/F/D/J]
+	RegGroupCode AS [C/F/D/N]
+	RegSourceID AS [C/F/D/L]
+	RegStateCode AS [C/F/D/R]
+	RegTypCode AS [C/F/D/K]
+	StartDay AS [C/F/D/B]
+	StartHour AS [C/F/D/F]
+	StartMinute AS [C/F/D/G]
+	StartMonth AS [C/F/D/A]
+	WeekCondition AS [C/F/D/Q]
+  FROM
+  [' + @db + '].dbo.R_D_DETAILLANEINFO_RegDataAry T3
+  WHERE
+  T2.DependanceEntityId = T3.DependanceEntityId
+  FOR XML PATH(''D''), ROOT(''d''), TYPE
+) [D]
+
+	ReversibleLaneFlg AS [C/F/C]
+  FROM
+  [' + @db + '].dbo.R_D_NEARESTLANEINFO_NearestLaneInfoAry T2
+  WHERE
+  T1. = T2.
+  FOR XML PATH(''F''), ROOT(''d''), TYPE
+) [F]
+
+T1.LaneOutNearestLaneSeparateCode AS [C/C]
+T1.LaneOutSidewalkFlg AS [C/E]
+T1.LaneOutSimpleSlopeCode AS [C/G]
+
+	)
+	FROM
+	  D_DCRSNEARLANE T;';
+
+	EXECUTE sp_executesql @sql, @param;
+
+END;

@@ -1,0 +1,123 @@
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- 作成 D_TGNRPOI 物件ジャンル
+-- =============================================
+CREATE PROCEDURE [dbo].[SP_create_D_TGNRPOI]
+(
+  @db nvarchar(max)
+)
+AS
+BEGIN
+	DECLARE @sql nvarchar(max) = '';
+	DECLARE @param nvarchar(max) = '';
+
+	TRUNCATE TABLE D_TGNRPOI;
+
+	SET @sql = N'
+	INSERT INTO D_TGNRPOI
+	( CommunionEntityId, XMLProperty )
+	SELECT
+	  T.CommunionEntityId
+	, ''''
+	FROM
+	  [' + @db + '].dbo.R_D_TGNRPOI T;';
+
+	EXECUTE sp_executesql @sql, @param;
+
+	SET @sql =N'
+	UPDATE T
+	SET
+	  T.XMLProperty = (
+		SELECT
+		  (SELECT
+		  	T2.IETFLangTag AS [A]
+		 ,	T2.Name AS [F]
+		FROM
+		  [' + @db + '].dbo.R_D_TGNRPOI_DispNameMultiLang T2
+		WHERE
+		  T.CommunionEntityId = T2.CommunionEntityId AND T2.rec = 1
+		FOR XML PATH(''d''), TYPE) AS [A/A]
+		, (SELECT
+		  	T2.IETFLangTag AS [A]
+		 ,	T2.Name AS [F]
+		 ,	T2.VoiceAwareAry AS [D/d]
+		 ,	T2.VoiceCompAry AS [E/d]
+		FROM
+		  [' + @db + '].dbo.R_D_TGNRPOI_DispNameMultiLang T2
+		WHERE
+		  T.CommunionEntityId = T2.CommunionEntityId AND T2.rec = 2
+		FOR XML PATH(''d''), TYPE) AS [A/A]
+		, (SELECT
+		  	T2.IETFLangTag AS [A]
+		 ,	T2.Name AS [F]
+		FROM
+		  [' + @db + '].dbo.R_D_TGNRPOI_DispNameMultiLang T2
+		WHERE
+		  T.CommunionEntityId = T2.CommunionEntityId AND T2.rec = 3
+		FOR XML PATH(''d''), TYPE) AS [A/A]
+
+		 ,(SELECT
+		  	T2.IETFLangTag AS [A]
+		 ,	T2.Name AS [F]
+		FROM
+		  [' + @db + '].dbo.R_D_TGNRPOI_FormalNameMultiLang T2
+		WHERE
+		  T.CommunionEntityId = T2.CommunionEntityId AND T2.rec = 1
+		FOR XML PATH(''d''), TYPE) AS [B/A]
+		, (SELECT
+		  	T2.IETFLangTag AS [A]
+		 ,	T2.Name AS [F]
+		 ,	T2.VoiceAwareAry AS [D/d]
+		 ,	T2.VoiceCompAry AS [E/d]
+		FROM
+		  [' + @db + '].dbo.R_D_TGNRPOI_FormalNameMultiLang T2
+		WHERE
+		  T.CommunionEntityId = T2.CommunionEntityId AND T2.rec = 2
+		FOR XML PATH(''d''), TYPE) AS [B/A]
+		, (SELECT
+		  	T2.IETFLangTag AS [A]
+		 ,	T2.Name AS [F]
+		FROM
+		  [' + @db + '].dbo.R_D_TGNRPOI_FormalNameMultiLang T2
+		WHERE
+		  T.CommunionEntityId = T2.CommunionEntityId AND T2.rec = 3
+		FOR XML PATH(''d''), TYPE) AS [B/A]
+
+		, T1.GnrCode AS [C]
+		, T1.IndexDivision AS [D]
+		, T1.reftypeMarkName AS [E/@reftype]
+		, T1.refMarkName AS [E/@ref]
+
+		, T1.NestLevel AS [I]
+		, T1.OutputFlg AS [F]
+		, T1.ParentTableOID AS [J]
+		, T1.TelFlg AS [G]
+		, (SELECT
+			  T1.reftype AS [d/@reftype]
+			, T1.ref AS [d/@ref]
+		  FROM
+		  [' + @db + '].dbo.R_D_TGNRPOI_TypTxtAry T1
+		  WHERE
+		  T.CommunionEntityId = T1.CommunionEntityId
+		  FOR XML PATH(''''), TYPE
+		) [H]
+
+		, T1.WebSurveyFlgEn AS [K]
+		, T1.TriggerTypeId AS [M]
+
+		FROM
+		  [' + @db + '].dbo.R_D_TGNRPOI T1
+
+		WHERE
+		  T.CommunionEntityId = T1.CommunionEntityId
+		FOR XML PATH(''r'')
+	)
+	FROM
+	  D_TGNRPOI T;';
+
+	EXECUTE sp_executesql @sql, @param;
+
+END;

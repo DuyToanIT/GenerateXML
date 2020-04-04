@@ -1,0 +1,91 @@
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+-- 作成 D_TPOINOPNT 座標なし物件
+-- =============================================
+CREATE PROCEDURE [dbo].[SP_create_D_TPOINOPNT]
+(
+  @db nvarchar(max)
+)
+AS
+BEGIN
+	DECLARE @sql nvarchar(max) = '';
+	DECLARE @param nvarchar(max) = '';
+
+	TRUNCATE TABLE D_TPOINOPNT;
+
+	SET @sql = N'
+	INSERT INTO D_TPOINOPNT
+	( CommunionEntityId, XMLProperty )
+	SELECT
+	  T.CommunionEntityId
+	, ''''
+	FROM
+	  [' + @db + '].dbo.R_D_TPOINOPNT T;';
+
+	EXECUTE sp_executesql @sql, @param;
+
+	SET @sql =N'
+	UPDATE T
+	SET
+	  T.XMLProperty = (
+		SELECT
+		  T1.reftypeAdrName AS [A/@reftype]
+		, T1.refAdrName AS [A/@ref]
+
+		, T1.DstCodeDstNo AS [B/C]
+		, T1.DstCodeGnrCode AS [B/A]
+		, T1.DstCodePrefCode AS [B/B]
+
+		, T1.reftypeGnrPOI AS [C/@reftype]
+		, T1.refGnrPOI AS [C/@ref]
+
+		 ,CASE WHEN TRIM(T1.InfoCenterMultiLangKj) != '''' THEN (SELECT ''ja-Jpan'' AS [A], T1.InfoCenterMultiLangKj AS [F] FOR XML PATH(''d''), TYPE) END AS [D/A]
+		 ,CASE
+			WHEN TRIM(T1.InfoCenterMultiLangVoiceAware) != '''' THEN (
+			SELECT
+			  ''ja-Kana'' AS [A]
+			 ,T1.InfoCenterMultiLangKn AS [F]
+			 ,T1.InfoCenterMultiLangVoiceAware AS [D/d]
+			 ,T1.InfoCenterMultiLangVoiceComp AS [E/d]
+			FOR XML PATH(''d''), TYPE
+			)
+			WHEN TRIM(T1.InfoCenterMultiLangKn) != '''' THEN (
+			SELECT
+			  ''ja-Kana'' AS [A]
+			 ,T1.InfoCenterMultiLangKn AS [F]
+			FOR XML PATH(''d''), TYPE
+			)
+			END AS [D/A]
+
+		, T1.NestLevel AS [G]
+		, T1.OutPutInfoCenterFlg AS [E]
+		, T1.ParentTableOID AS [H]
+		, (SELECT
+			  T2.reftypeAreaCode AS [A/@reftype]
+, T2.refAreaCode AS [A/@ref]
+
+			, T2.MemberCode AS [B]
+
+		  FROM
+		  [' + @db + '].dbo.R_D_TPOINOPNT_TelInfoAry T2
+		  WHERE
+		  T1.CommunionEntityId = T2.CommunionEntityId
+		  FOR XML PATH(''F''), ROOT(''d''), TYPE
+		) [F]
+
+		FROM
+		  [' + @db + '].dbo.R_D_TPOINOPNT T1
+
+		WHERE
+		  T.CommunionEntityId = T1.CommunionEntityId
+		FOR XML PATH(''r'')
+	)
+	FROM
+	  D_TPOINOPNT T;';
+
+	EXECUTE sp_executesql @sql, @param;
+
+END;
